@@ -6,7 +6,13 @@
  */
 #include "easy_lscs.h"
 
-void init_LEDs(void) {
+
+//interrupts code
+static callback_t ta_cb = 0;
+static callback_t s1_cb = 0;
+static callback_t s2_cb = 0;
+
+void init_leds(void) {
     RED_LED_DIR |= RED_LED_PIN;
     GREEN_LED_DIR |= GREEN_LED_PIN;
 
@@ -38,13 +44,44 @@ void green_toggle(void) {
     GREEN_LED_OUT ^= GREEN_LED_PIN;
 }
 
-void init_buttons(void) {
+void init_switches(void) {
     P1DIR &= ~(S1_BUTTON | S2_BUTTON);
     P1REN |=  (S1_BUTTON | S2_BUTTON);
     P1OUT |=  (S1_BUTTON | S2_BUTTON);
     P1IES |=  (S1_BUTTON | S2_BUTTON);
     P1IFG &= ~(S1_BUTTON | S2_BUTTON);
     P1IE  |=  (S1_BUTTON | S2_BUTTON);
+}
+
+//interrupts
+void s1_callback(callback_t cb) {
+    s1_cb = cb;
+}
+
+void s2_callback(callback_t cb) {
+    s2_cb = cb;
+}
+
+int s1_pressed() {
+    return (P1IN & S1_BUTTON) == 0;
+}
+
+int s2_pressed() {
+    return (P1IN & S2_BUTTON) == 0;
+}
+
+#pragma vector = PORT1_VECTOR
+__interrupt void Port1_ISR(void)
+{
+    if (P1IFG & S1_BUTTON) {
+        P1IFG &= ~S1_BUTTON;
+        s1_cb();
+    }
+
+    if (P1IFG & S2_BUTTON) {
+        P1IFG &= ~S2_BUTTON;
+        s2_cb();
+    }
 }
 
 //**********************************
@@ -69,6 +106,28 @@ void config_ACLK_to_32KHz_crystal(void) {
     return;
 }
 
+
+void config_upmode(unsigned int ms) {
+    TA0CCTL0 = CCIE;            // Enable interrupt
+    TA0CCTL0 &= ~CCIFG;         // Ensure flag is cleared at the start
+
+    TA0CTL = TASSEL_1 | ID_0 | MC_1 | TACLR;
+
+    float seconds = ms/1000.0;
+    TA0CCR0 = seconds * 32768;
+
+}
+
+// interupts
+void timer_callback(callback_t cb) {
+    ta_cb = cb;
+}
+
+#pragma vector = TIMER0_A0_VECTOR
+__interrupt void T0A0_ISR(void)
+{
+    ta_cb();
+}
 
 
 

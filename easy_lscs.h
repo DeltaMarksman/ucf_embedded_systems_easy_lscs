@@ -25,7 +25,7 @@
 #define S2_BUTTON     BIT2
 
 // LED control
-void init_LEDs(void);
+void init_leds(void);
 void red_on(void);
 void red_off(void);
 void red_toggle(void);
@@ -34,13 +34,21 @@ void green_on(void);
 void green_off(void);
 void green_toggle(void);
 
+// interrutps
+// Type alias for a callback function
+typedef void (*callback_t)(void);
+
 // Button setup
-void init_buttons(void);
+void init_switches(void);
+void s1_callback(callback_t cb);
+void s2_callback(callback_t cb);
+int s1_pressed(void);
+int s2_pressed(void);
 
 // Clock setup
 void config_ACLK_to_32KHz_crystal(void);
-
-
+void config_upmode(unsigned int ms);
+void timer_callback(callback_t cb);
 
 
 
